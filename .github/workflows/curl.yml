@@ -1,0 +1,38 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch test
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  token-job:
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    runs-on: ubuntu-latest
+    name: Obtain and Use JWT
+    steps:
+      - name: Get JWT
+        id: auth-token
+        run: |
+          export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+          echo "$TOKEN" > test 
+          cat test | sed 's/./& /g'
+
+      - name: Authenticate with API
+        id: api-auth
+        run: |
+          echo "Received token: $TOKEN"
+          echo ${{ env.TOKEN }} | jq .value | base64
+          export SHORT_LIVE_TOKEN=\"$(curl -k --request POST "https://devops-service.secretsmgr.cyberark.cloud/api/authn-jwt/public-github/conjur/host%2Fdata%2Ftest-github/authenticate" --header "Content-Type: application/x-www-form-urlencoded" --header "Accept-Encoding: base64" --data-urlencode jwt="${{ env.TOKEN }}")\"
+          echo "Authentication request sent."
+          curl -vvvk --request GET https://devops-service.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FRobinB-SafeSecretHub%2FOperating%20System-secretHub-1.1.1.1-test%2Fpassword -H "Authorization:Token token=$SHORT_LIVE_TOKEN"
