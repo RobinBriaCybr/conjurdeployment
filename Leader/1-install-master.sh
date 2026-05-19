@@ -16,6 +16,7 @@ sudo podman run --name $container \
   -d --restart=always \
   -p "443:443" -p "5432:5432" -p "1999:1999" \
   --security-opt seccomp=seccomp.json \
+  --cap-add AUDIT_WRITE \
   -v /home/ec2-user/cluster/log:/var/log/conjur/:Z \
   -v /home/ec2-user/cluster/backup/:/opt/conjur/backup:Z \
   -v /home/ec2-user/cluster/config/:/etc/conjur/config:Z \
